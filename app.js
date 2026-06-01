@@ -143,17 +143,46 @@ const quick = (page, symbol, title, text, primary = false) => `<button class="qu
 const stat = (value, label, symbol) => `<div class="stat"><span class="stat-dot">${symbol}</span><div><strong>${value}</strong><small>${label}</small></div></div>`;
 
 function home() {
-  return shell(`<section class="hero"><div class="hero-content"><h1>Benvenuto, Marco.</h1><p>Trova casi reali, risolvi problemi e fai crescere la conoscenza HVAC.</p>${searchBox()}</div></section>
+  const cases = getCases();
+  const openCases = cases.filter(item => item.status !== "verified");
+  return shell(`<section class="hero"><div class="hero-glow"></div><div class="hero-content">
+      <div class="hero-copy"><span class="eyebrow">HVAC KNOWLEDGE NETWORK</span><h1>Risolvi. Contribuisci.<br><span>Scala la classifica.</span></h1><p>Trova casi verificati, condividi esperienza reale e costruisci una reputazione tecnica che conta.</p></div>
+      <div class="hero-rank"><span class="rank-kicker">Il tuo livello</span><strong>Senior</strong><div class="rank-line"><span style="width:74%"></span></div><small>1.420 XP · 580 XP verso Master</small></div>
+      ${searchBox()}
+    </div></section>
     <main class="content">
+      <section class="section weekly-card">
+        <div><span class="eyebrow dark">LA TUA SETTIMANA</span><h2>Continua così, Marco.</h2><p>Sei salito di 3 posizioni tra gli specialisti Chiller.</p></div>
+        <div class="weekly-grid">
+          <div><strong>+42</strong><span>Reputazione</span></div>
+          <div><strong>3</strong><span>Diagnosi corrette</span></div>
+          <div><strong>#8</strong><span>Ranking Chiller</span></div>
+        </div>
+      </section>
       <section class="section"><div class="section-heading"><h2>Azioni rapide</h2></div><div class="quick-grid">
         ${quick("new", "+", "Nuovo caso", "Crea un caso HVAC", true)}${quick("search", "⌕", "Cerca casi", "Trova soluzioni verificate")}
         ${quick("mycases", "•••", "I miei casi", "Visualizza i tuoi casi")}${quick("verified", "☆", "Casi verificati", "Soluzioni confermate")}${quick("useful", "✓", "Più utili", "Contributi di qualità")}
       </div></section>
-      <section class="section panel"><div class="stats">${stat("127", "Casi pubblicati", "▤")}${stat("86", "Casi verificati", "✓")}${stat("18", "Da risolvere", "!")}${stat("2m", "Ricerca media", "↗")}</div></section>
-      <section class="section"><div class="section-heading"><h2>Casi in evidenza</h2><button class="link-button" data-nav="search">Vedi tutti ›</button></div>
+      <section class="home-columns section">
+        <div class="section featured-zone"><div class="section-heading"><div><span class="eyebrow dark">KNOWLEDGE BASE</span><h2>Casi in evidenza</h2></div><button class="link-button" data-nav="search">Vedi tutti ›</button></div>
         <div class="chips"><button class="chip active">Più utili</button><button class="chip">Verificati di recente</button><button class="chip">Da risolvere</button></div>
-        <div class="case-list">${getCases().slice(0, 4).map(caseCard).join("")}</div></section>
+        <div class="case-list">${cases.slice(0, 3).map(caseCard).join("")}</div></div>
+        <aside class="leaderboard-card"><div class="leader-head"><span class="eyebrow">TOP SPECIALISTS</span><h2>Leaderboard</h2><p>Questa settimana</p></div>
+          <div class="leader-list">${leader("01","Giulia P.","Diagnosi elettrica","482 XP",true)}${leader("02","Luca B.","Pompe di calore","419 XP")}${leader("03","Marco R.","Chiller","396 XP","me")}</div>
+          <button class="leader-cta" data-nav="profile">Vedi il tuo profilo tecnico →</button>
+        </aside>
+      </section>
+      <section class="section challenge-zone"><div class="section-heading"><div><span class="eyebrow dark">CONTRIBUISCI ORA</span><h2>Sfide tecniche aperte</h2></div><button class="link-button" data-nav="search">Esplora i casi ›</button></div>
+        <div class="challenge-grid">${openCases.slice(0,3).map(challengeCard).join("") || `<div class="empty">Nessuna sfida aperta al momento.</div>`}</div>
+      </section>
+      <section class="section panel"><div class="stats">${stat("127", "Casi pubblicati", "▤")}${stat("86", "Casi verificati", "✓")}${stat("18", "Sfide aperte", "!")}${stat("2m", "Ricerca media", "↗")}</div></section>
     </main>`, "home");
+}
+function leader(position, name, specialty, score, highlight = false) {
+  return `<div class="leader-row ${highlight === "me" ? "me" : ""}"><span class="leader-position">${position}</span><span class="leader-avatar">${name.split(" ").map(part => part[0]).join("")}</span><div><strong>${name}</strong><small>${specialty}</small></div><b>${score}</b></div>`;
+}
+function challengeCard(item) {
+  return `<article class="challenge-card" data-open-case="${esc(item.id)}"><div><span class="challenge-status">Sfida aperta</span><h3>${esc(item.title)}</h3><p>${esc(item.type)} · ${esc(item.brand)} · ${esc(item.refrigerant)}</p></div><div class="challenge-foot"><span>+15 XP diagnosi utile</span><button>Partecipa →</button></div></article>`;
 }
 
 function filterDrawer() {
