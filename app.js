@@ -146,24 +146,23 @@ const stat = (value, label, symbol) => `<div class="stat"><span class="stat-dot"
 function home() {
   const cases = getCases();
   const openCases = cases.filter(item => item.status !== "verified");
-  return shell(`<section class="hero"><div class="blueprint-grid"></div><div class="scan-line"></div><div class="hero-content">
-      <div class="hero-copy"><span class="system-online"><i></i> SYSTEM ONLINE / HVAC NETWORK ACTIVE</span><h1>DIAGNOSTICA.<br><span>RISOLVI.</span> VERIFICA.</h1><p>Database tecnico HVAC del futuro.<br>Casi reali, misure strutturate e soluzioni verificate.</p></div>
-      <div class="network-panel"><span>NETWORK STATUS</span><strong>127 <small>CASES INDEXED</small></strong><strong>86 <small>VERIFIED</small></strong><strong>94% <small>RELIABILITY</small></strong></div>
-      ${searchBox()}<div class="quick-filters">${["R410A","Alta pressione","VRF","Chiller","R32","Inverter","Daikin","Mitsubishi"].map(tag => `<button type="button" class="hud-chip">${tag}</button>`).join("")}</div>
-    </div></section>
-    <main class="content">
-      <section class="section"><div class="section-heading"><div><span class="eyebrow dark">CORE OPERATIONS</span><h2>Casi diagnostici in evidenza</h2></div><button class="link-button" data-nav="search">Database completo ›</button></div>
-        <div class="case-list diagnostic-grid">${cases.slice(0, 3).map(caseCard).join("")}</div></section>
-      <section class="section"><div class="section-heading"><div><span class="eyebrow dark">QUICK ACCESS</span><h2>Azioni rapide</h2></div></div><div class="quick-grid">
-        ${quick("new", "+", "Nuovo caso", "Crea un caso HVAC", true)}${quick("search", "⌕", "Cerca casi", "Trova soluzioni verificate")}
-        ${quick("verified", "✓", "Casi verificati", "Soluzioni confermate")}${quick("search", "!", "Diagnosi aperte", "Supporta la rete")}${quick("profile", "↗", "Tech score", "Controlla il livello")}
-      </div></section>
-      <section class="home-columns section"><div class="weekly-card"><div><span class="eyebrow dark">TECHNICIAN SCORE</span><h2>Senior Operator</h2><p>La reputazione cresce con diagnosi utili e soluzioni verificate.</p><div class="rank-line"><span style="width:74%"></span></div><small>1.420 XP / 2.000 XP verso Master</small></div><div class="weekly-grid"><div><strong>+42</strong><span>XP settimana</span></div><div><strong>92%</strong><span>Accuratezza</span></div><div><strong>31</strong><span>Diagnosi corrette</span></div></div></div>
-        <aside class="leaderboard-card compact"><div class="leader-head"><span class="eyebrow">NETWORK RANK</span><h2>#08</h2><p>Specialisti Chiller / settimana</p></div><button class="leader-cta" data-nav="profile">Apri profilo tecnico →</button></aside>
+  const featured = openCases[0] || cases[0];
+  return shell(`<main class="content home-premium">
+      <section class="rank-graph-card">
+        <div><span class="lime-label">NETWORK RANK</span><h1>#08</h1><p>Specialisti Chiller / settimana</p><button class="lime-outline" data-nav="profile">Apri profilo tecnico <b>→</b></button></div>
+        <div class="xp-pill">+42 XP</div>
+        <svg class="rank-chart" viewBox="0 0 420 180" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="limeArea" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#c7ff2e" stop-opacity=".34"/><stop offset="1" stop-color="#c7ff2e" stop-opacity="0"/></linearGradient></defs><path d="M0 150 C45 142, 63 122, 102 128 S162 158, 202 120 S252 148, 286 104 S344 112, 384 64 S412 38, 420 28 L420 180 L0 180Z" fill="url(#limeArea)"/><path d="M0 150 C45 142, 63 122, 102 128 S162 158, 202 120 S252 148, 286 104 S344 112, 384 64 S412 38, 420 28" fill="none" stroke="#c7ff2e" stroke-width="3"/><circle cx="420" cy="28" r="6" fill="#f5f9ff" stroke="#c7ff2e" stroke-width="3"/></svg>
       </section>
-      <section class="section challenge-zone"><div class="section-heading"><div><span class="eyebrow dark">OPEN SIGNALS</span><h2>Diagnosi aperte</h2></div><button class="link-button" data-nav="search">Esplora i casi ›</button></div>
-        <div class="challenge-grid">${openCases.slice(0,3).map(challengeCard).join("") || `<div class="empty">Nessuna sfida aperta al momento.</div>`}</div>
+      <section class="score-panel">
+        <div><span class="lime-label">TECHNICIAN SCORE</span><h2>Senior Operator</h2><p>La reputazione cresce con diagnosi utili<br>e soluzioni verificate.</p></div><div class="rank-emblem">★</div>
+        <div class="lime-progress"><i></i></div><div class="score-copy"><strong>1.420 XP</strong> / 2.000 XP verso Master</div>
+        <div class="score-stats"><div><strong>+42</strong><span>XP settimana</span></div><div><strong>92%</strong><span>Accuratezza</span></div><div><strong>31</strong><span>Diagnosi corrette</span></div></div>
       </section>
+      <section class="open-panel"><div class="panel-heading"><div><span class="lime-label">OPEN SIGNALS</span><h2>Diagnosi aperte</h2></div><button class="yellow-link" data-nav="search">Esplora i casi →</button></div>
+        ${featured ? spotlightCard(featured) : `<div class="empty">Nessuna diagnosi aperta.</div>`}
+      </section>
+      <section class="media-panel"><div class="panel-heading"><span class="lime-label">MEDIA TRACE DISPONIBILI <b>NEW</b></span></div><div class="trace-row">${cases.map(traceCard).join("")}</div></section>
+      <section class="contribute-card"><div><span class="lime-label">CONTRIBUISCI E GUADAGNA</span><h2>Aiuta la community e sali di livello</h2><p>Più casi utili, più XP, più visibilità.</p><button class="lime-outline" data-nav="new">Scopri come funziona <b>→</b></button></div><span class="bolt">ϟ</span></section>
     </main>`, "home");
 }
 function leader(position, name, specialty, score, highlight = false) {
@@ -171,6 +170,12 @@ function leader(position, name, specialty, score, highlight = false) {
 }
 function challengeCard(item) {
   return `<article class="challenge-card" data-open-case="${esc(item.id)}"><div><span class="challenge-status">Sfida aperta</span><h3>${esc(item.title)}</h3><p>${esc(item.type)} · ${esc(item.brand)} · ${esc(item.refrigerant)}</p></div><div class="challenge-foot"><span>+15 XP diagnosi utile</span><button>Partecipa →</button></div></article>`;
+}
+function spotlightCard(item) {
+  return `<article class="spotlight-card" data-open-case="${esc(item.id)}"><span class="yellow-label">SFIDA APERTA</span><h3>${esc(item.title)}</h3><p>${esc(item.type)} · ${esc(item.brand)} · ${esc(item.refrigerant)}</p><div class="spotlight-foot"><span class="media-count">▣ 2</span><span class="media-count">▶ 1</span><span class="media-count">▭</span><strong>+15 XP diagnosi utile</strong><button>Partecipa →</button></div></article>`;
+}
+function traceCard(item) {
+  return `<article class="trace-card" data-open-case="${esc(item.id)}"><div class="trace-image ${esc(item.art || "")}"><span>▣ ${2 + (item.useful % 3)}</span><span>▶ ${1 + (item.useful % 2)}</span></div><h3>${esc(item.tags[0])}</h3><p>${esc(item.type)} · ${esc(item.refrigerant)}</p><b>→</b></article>`;
 }
 
 function filterDrawer() {
