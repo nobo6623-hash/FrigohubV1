@@ -1,4 +1,4 @@
-const CACHE = "frigohub-shell-v4";
+const CACHE = "frigohub-shell-v5";
 const ASSETS = [
   "./",
   "./index.html",

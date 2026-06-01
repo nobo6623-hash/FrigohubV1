@@ -97,7 +97,8 @@ const icon = (name, size = 22) => {
   const paths = {
     search: '<circle cx="11" cy="11" r="6"/><path d="m16 16 5 5"/>',
     filter: '<path d="M4 6h16M7 12h10M10 18h4"/>',
-    bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M14 21h-4"/>'
+    bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M14 21h-4"/>',
+    mic: '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/>'
   };
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">${paths[name]}</svg>`;
 };
@@ -107,7 +108,7 @@ function statusLabel(status) {
 function statusClass(status) { return status === "verified" ? "" : status === "pending" ? "pending" : "open"; }
 function measureTiles(measurements = []) {
   return measurements.length
-    ? measurements.map(([label, value, unit]) => `<div class="measure"><small>${esc(label)}</small><strong>${esc(value)} <em>${esc(unit)}</em></strong></div>`).join("")
+    ? measurements.map(([label, value, unit], index) => `<div class="measure ${index < 2 ? "signal" : ""}"><small>${esc(label)}</small><strong>${esc(value)} <em>${esc(unit)}</em></strong><span class="telemetry-bar"><i style="width:${Math.min(92, 42 + index * 12)}%"></i></span></div>`).join("")
     : `<p class="metadata">Nessuna misura inserita.</p>`;
 }
 
@@ -127,17 +128,17 @@ function nav(page, symbol, label, active, main = false) {
   return `<button class="nav-button ${active === page ? "active" : ""} ${main ? "main" : ""}" data-nav="${page}"><span class="nav-symbol">${symbol}</span><span>${label}</span></button>`;
 }
 function searchBox(value = "") {
-  return `<form class="search-shell" data-search-form>${icon("search", 29)}<input class="search-input" name="q" value="${esc(value)}" placeholder="Cerca casi, sintomi, marche, modelli, refrigeranti..." autocomplete="off"><button class="filter-button" data-toggle-filters type="button">${icon("filter")}<span>Filtri</span></button></form>`;
+  return `<form class="search-shell" data-search-form>${icon("search", 27)}<input class="search-input" name="q" value="${esc(value)}" placeholder="Cerca errore, sintomo, modello, refrigerante..." autocomplete="off"><button class="voice-button" type="button" aria-label="Ricerca vocale">${icon("mic", 19)}</button><button class="filter-button" data-toggle-filters type="button">${icon("filter")}<span>Filtri</span></button></form>`;
 }
 function caseCard(item) {
   const voted = state.votes.includes(item.id);
+  const confidence = item.status === "verified" ? "96%" : item.status === "diagnosis" ? "72%" : "OPEN";
   return `<article class="case-card" data-open-case="${esc(item.id)}">
-    <div class="case-art ${esc(item.art || "")}"></div>
-    <div class="case-body"><h3>${esc(item.title)}</h3><div class="metadata">${esc(item.type)} · ${esc(item.brand)} · ${esc(item.refrigerant)}</div>
-      <div class="tag-row">${item.tags.map((tag, i) => `<span class="tag ${i === 0 ? "alert" : ""}">${esc(tag)}</span>`).join("")}</div></div>
-    <div class="case-side"><span class="badge ${statusClass(item.status)}">${statusLabel(item.status)}</span>
-      <button class="useful" data-vote="${esc(item.id)}">${voted ? "✓ Utile" : "Utile per la diagnosi"} · ${item.useful + (voted ? 1 : 0)}</button>
-      <small class="metadata">${esc(item.author)} · ${esc(item.age)}</small></div></article>`;
+    <div class="case-status-line"><span class="badge ${statusClass(item.status)}">${statusLabel(item.status)}</span><span class="case-code">FH-${esc(item.id.slice(-3).toUpperCase())}</span></div>
+    <div class="case-body"><h3>${esc(item.title)}</h3><div class="metadata terminal-meta">${esc(item.type)} / ${esc(item.brand)} / ${esc(item.refrigerant)}</div>
+      <div class="tag-row">${item.tags.map((tag, i) => `<span class="tag ${i === 0 ? "alert" : ""}">${esc(tag)}</span>`).join("")}</div>
+      <div class="case-metrics"><span>${(item.diagnoses || []).length} diagnosi</span><button class="useful" data-vote="${esc(item.id)}">${voted ? "✓ utile" : "utile"} ${item.useful + (voted ? 1 : 0)}</button><span>${esc(item.age)}</span></div></div>
+    <div class="confidence"><small>CONFIDENCE</small><strong>${confidence}</strong></div></article>`;
 }
 const quick = (page, symbol, title, text, primary = false) => `<button class="quick-card ${primary ? "primary" : ""}" data-nav="${page}"><span class="quick-icon">${symbol}</span><strong>${title}</strong><small>${text}</small></button>`;
 const stat = (value, label, symbol) => `<div class="stat"><span class="stat-dot">${symbol}</span><div><strong>${value}</strong><small>${label}</small></div></div>`;
@@ -145,37 +146,24 @@ const stat = (value, label, symbol) => `<div class="stat"><span class="stat-dot"
 function home() {
   const cases = getCases();
   const openCases = cases.filter(item => item.status !== "verified");
-  return shell(`<section class="hero"><div class="hero-glow"></div><div class="hero-content">
-      <div class="hero-copy"><span class="eyebrow">HVAC KNOWLEDGE NETWORK</span><h1>Risolvi. Contribuisci.<br><span>Scala la classifica.</span></h1><p>Trova casi verificati, condividi esperienza reale e costruisci una reputazione tecnica che conta.</p></div>
-      <div class="hero-rank"><span class="rank-kicker">Il tuo livello</span><strong>Senior</strong><div class="rank-line"><span style="width:74%"></span></div><small>1.420 XP · 580 XP verso Master</small></div>
-      ${searchBox()}
+  return shell(`<section class="hero"><div class="blueprint-grid"></div><div class="scan-line"></div><div class="hero-content">
+      <div class="hero-copy"><span class="system-online"><i></i> SYSTEM ONLINE / HVAC NETWORK ACTIVE</span><h1>DIAGNOSTICA.<br><span>RISOLVI.</span> VERIFICA.</h1><p>Database tecnico HVAC del futuro.<br>Casi reali, misure strutturate e soluzioni verificate.</p></div>
+      <div class="network-panel"><span>NETWORK STATUS</span><strong>127 <small>CASES INDEXED</small></strong><strong>86 <small>VERIFIED</small></strong><strong>94% <small>RELIABILITY</small></strong></div>
+      ${searchBox()}<div class="quick-filters">${["R410A","Alta pressione","VRF","Chiller","R32","Inverter","Daikin","Mitsubishi"].map(tag => `<button type="button" class="hud-chip">${tag}</button>`).join("")}</div>
     </div></section>
     <main class="content">
-      <section class="section weekly-card">
-        <div><span class="eyebrow dark">LA TUA SETTIMANA</span><h2>Continua così, Marco.</h2><p>Sei salito di 3 posizioni tra gli specialisti Chiller.</p></div>
-        <div class="weekly-grid">
-          <div><strong>+42</strong><span>Reputazione</span></div>
-          <div><strong>3</strong><span>Diagnosi corrette</span></div>
-          <div><strong>#8</strong><span>Ranking Chiller</span></div>
-        </div>
-      </section>
-      <section class="section"><div class="section-heading"><h2>Azioni rapide</h2></div><div class="quick-grid">
+      <section class="section"><div class="section-heading"><div><span class="eyebrow dark">CORE OPERATIONS</span><h2>Casi diagnostici in evidenza</h2></div><button class="link-button" data-nav="search">Database completo ›</button></div>
+        <div class="case-list diagnostic-grid">${cases.slice(0, 3).map(caseCard).join("")}</div></section>
+      <section class="section"><div class="section-heading"><div><span class="eyebrow dark">QUICK ACCESS</span><h2>Azioni rapide</h2></div></div><div class="quick-grid">
         ${quick("new", "+", "Nuovo caso", "Crea un caso HVAC", true)}${quick("search", "⌕", "Cerca casi", "Trova soluzioni verificate")}
-        ${quick("mycases", "•••", "I miei casi", "Visualizza i tuoi casi")}${quick("verified", "☆", "Casi verificati", "Soluzioni confermate")}${quick("useful", "✓", "Più utili", "Contributi di qualità")}
+        ${quick("verified", "✓", "Casi verificati", "Soluzioni confermate")}${quick("search", "!", "Diagnosi aperte", "Supporta la rete")}${quick("profile", "↗", "Tech score", "Controlla il livello")}
       </div></section>
-      <section class="home-columns section">
-        <div class="section featured-zone"><div class="section-heading"><div><span class="eyebrow dark">KNOWLEDGE BASE</span><h2>Casi in evidenza</h2></div><button class="link-button" data-nav="search">Vedi tutti ›</button></div>
-        <div class="chips"><button class="chip active">Più utili</button><button class="chip">Verificati di recente</button><button class="chip">Da risolvere</button></div>
-        <div class="case-list">${cases.slice(0, 3).map(caseCard).join("")}</div></div>
-        <aside class="leaderboard-card"><div class="leader-head"><span class="eyebrow">TOP SPECIALISTS</span><h2>Leaderboard</h2><p>Questa settimana</p></div>
-          <div class="leader-list">${leader("01","Giulia P.","Diagnosi elettrica","482 XP",true)}${leader("02","Luca B.","Pompe di calore","419 XP")}${leader("03","Marco R.","Chiller","396 XP","me")}</div>
-          <button class="leader-cta" data-nav="profile">Vedi il tuo profilo tecnico →</button>
-        </aside>
+      <section class="home-columns section"><div class="weekly-card"><div><span class="eyebrow dark">TECHNICIAN SCORE</span><h2>Senior Operator</h2><p>La reputazione cresce con diagnosi utili e soluzioni verificate.</p><div class="rank-line"><span style="width:74%"></span></div><small>1.420 XP / 2.000 XP verso Master</small></div><div class="weekly-grid"><div><strong>+42</strong><span>XP settimana</span></div><div><strong>92%</strong><span>Accuratezza</span></div><div><strong>31</strong><span>Diagnosi corrette</span></div></div></div>
+        <aside class="leaderboard-card compact"><div class="leader-head"><span class="eyebrow">NETWORK RANK</span><h2>#08</h2><p>Specialisti Chiller / settimana</p></div><button class="leader-cta" data-nav="profile">Apri profilo tecnico →</button></aside>
       </section>
-      <section class="section challenge-zone"><div class="section-heading"><div><span class="eyebrow dark">CONTRIBUISCI ORA</span><h2>Sfide tecniche aperte</h2></div><button class="link-button" data-nav="search">Esplora i casi ›</button></div>
+      <section class="section challenge-zone"><div class="section-heading"><div><span class="eyebrow dark">OPEN SIGNALS</span><h2>Diagnosi aperte</h2></div><button class="link-button" data-nav="search">Esplora i casi ›</button></div>
         <div class="challenge-grid">${openCases.slice(0,3).map(challengeCard).join("") || `<div class="empty">Nessuna sfida aperta al momento.</div>`}</div>
       </section>
-      <section class="section panel"><div class="stats">${stat("127", "Casi pubblicati", "▤")}${stat("86", "Casi verificati", "✓")}${stat("18", "Sfide aperte", "!")}${stat("2m", "Ricerca media", "↗")}</div></section>
     </main>`, "home");
 }
 function leader(position, name, specialty, score, highlight = false) {
@@ -213,15 +201,15 @@ function searchPage() {
 function detailPage() {
   const item = findCase(); if (!item) return home();
   const saved = state.saved.includes(item.id), voted = state.votes.includes(item.id);
-  return shell(`<main class="content"><div class="page-head"><button class="back" data-back>‹</button><div><span class="badge ${statusClass(item.status)}">${statusLabel(item.status)}</span><h1>${esc(item.title)}</h1><div class="metadata">${esc(item.type)} · ${esc(item.brand)} · ${esc(item.refrigerant)}</div></div></div>
+  return shell(`<main class="content detail-terminal"><div class="page-head"><button class="back" data-back>‹</button><div><span class="eyebrow dark">CASE INTELLIGENCE / FH-${esc(item.id.slice(-3).toUpperCase())}</span><h1>${esc(item.title)}</h1><div class="metadata terminal-meta">${esc(item.type)} / ${esc(item.brand)} / ${esc(item.refrigerant)}</div></div><span class="badge ${statusClass(item.status)}">${statusLabel(item.status)}</span></div>
     <div class="detail-grid"><div>
-      <section class="detail-card section"><h2>Sintomo principale</h2><p>${esc(item.symptom)}</p><div class="tag-row">${item.tags.map(tag => `<span class="tag">${esc(tag)}</span>`).join("")}</div></section>
-      <section class="detail-card section"><div class="section-heading"><h2>Misure iniziali</h2>${item.status !== "verified" ? `<button class="link-button" data-flow="measure">+ Aggiungi</button>` : ""}</div><div class="measure-grid">${measureTiles(item.measurements)}</div></section>
-      <section class="detail-card section"><div class="section-heading"><h2>Diagnosi proposte</h2>${item.status !== "verified" ? `<button class="link-button" data-flow="diagnose">+ Proponi</button>` : ""}</div>
+      <section class="detail-card section"><span class="section-code">01 / OVERVIEW</span><h2>Sintomo principale</h2><p>${esc(item.symptom)}</p><div class="tag-row">${item.tags.map(tag => `<span class="tag">${esc(tag)}</span>`).join("")}</div></section>
+      <section class="detail-card section telemetry-panel"><div class="section-heading"><div><span class="section-code">02 / TELEMETRY</span><h2>Misure iniziali</h2></div>${item.status !== "verified" ? `<button class="link-button" data-flow="measure">+ Aggiungi</button>` : ""}</div><div class="measure-grid">${measureTiles(item.measurements)}</div></section>
+      <section class="detail-card section diagnosis-timeline"><div class="section-heading"><div><span class="section-code">03 / DIAGNOSTIC TIMELINE</span><h2>Diagnosi proposte</h2></div>${item.status !== "verified" ? `<button class="link-button" data-flow="diagnose">+ Proponi</button>` : ""}</div>
         ${(item.diagnoses || []).length ? item.diagnoses.map(diag => `<div class="diagnosis"><strong>${esc(diag.category)} · confidenza ${esc(diag.confidence)}/5</strong><p>${esc(diag.text)}</p><small>${esc(diag.author)}</small></div>`).join("") : `<p class="metadata">Nessuna diagnosi proposta.</p>`}</section>
-      ${item.solution ? `<section class="detail-card solution section"><h2>Soluzione ${item.status === "verified" ? "verificata" : "da verificare"}</h2><p><strong>Causa:</strong> ${esc(item.cause)}</p><p><strong>Intervento:</strong> ${esc(item.solution)}</p></section>` : ""}
+      ${item.solution ? `<section class="detail-card solution section"><span class="section-code">04 / MOST LIKELY SOLUTION</span><h2>Soluzione ${item.status === "verified" ? "verificata" : "da verificare"}</h2><p><strong>Causa:</strong> ${esc(item.cause)}</p><p><strong>Intervento:</strong> ${esc(item.solution)}</p></section>` : ""}
       ${item.verification ? `<section class="detail-card verification section"><h2>Verifica tecnica</h2><p>Qualità dati <strong>${item.verification.data}/5</strong> · soluzione <strong>${item.verification.solution}/5</strong></p><p>${esc(item.verification.note)}</p><small>${esc(item.verification.author)}</small></section>` : ""}
-    </div><aside><section class="detail-card section"><h2>Azioni</h2><div class="stack-buttons">
+    </div><aside><section class="detail-card action-panel section"><span class="section-code">ACTION PANEL</span><h2>Azioni</h2><div class="stack-buttons">
       <button class="primary-button" data-vote="${esc(item.id)}">${voted ? "✓ Utile" : "Utile per la diagnosi"}</button><button class="secondary-button" data-save="${esc(item.id)}">${saved ? "✓ Salvato" : "Salva caso"}</button>
       ${item.status !== "verified" ? `<button class="secondary-button" data-flow="measure">Aggiungi misure</button><button class="secondary-button" data-flow="diagnose">Proponi diagnosi</button>` : ""}
       ${item.status === "open" || item.status === "diagnosis" ? `<button class="secondary-button" data-flow="resolve">Inserisci soluzione</button>` : ""}
@@ -259,7 +247,7 @@ function activityPage() {
   return shell(`<main class="content"><div class="page-head"><h1>Attività</h1></div><div class="activity-list">${items.map(item => `<article class="activity-item"><span class="activity-dot ${esc(item.kind)}"></span><div><strong>${esc(item.text)}</strong><small>${esc(item.age)}</small></div></article>`).join("")}</div></main>`, "activity");
 }
 function profilePage() {
-  return shell(`<main class="content"><section class="profile-hero"><div class="profile-avatar">MR</div><div><h1>Marco R.</h1><p>Tecnico HVAC · Lombardia</p><span class="badge">Fondatore</span></div></section><section class="stats profile-stats">${stat("92%", "Affidabilità", "✓")}${stat("18", "Casi verificati", "▤")}${stat("31", "Diagnosi corrette", "+")}${stat("146", "Contributi utili", "↗")}</section><section class="detail-card section"><h2>Specializzazioni</h2><div class="tag-row"><span class="tag">Chiller</span><span class="tag">Pompe di calore</span><span class="tag">Diagnosi elettrica</span><span class="tag">R32</span></div></section><section class="detail-card"><h2>Curriculum tecnico</h2><p class="metadata">La reputazione deriva da soluzioni verificate e diagnosi utili, non da follower o like.</p></section></main>`, "profile");
+  return shell(`<main class="content"><section class="profile-hero"><div class="profile-avatar">MR</div><div><span class="eyebrow">TECHNICIAN ID / FH-008</span><h1>Marco R.</h1><p>Senior HVAC Operator · Lombardia</p><div class="tag-row"><span class="badge">Fondatore</span><span class="badge">Senior</span><span class="badge">Specialista</span></div></div><div class="score-ring"><strong>92</strong><span>TECH SCORE</span></div></section><section class="stats profile-stats">${stat("92%", "Affidabilità", "✓")}${stat("18", "Soluzioni verificate", "▤")}${stat("31", "Diagnosi corrette", "+")}${stat("146", "Contributi utili", "↗")}</section><section class="detail-card section"><span class="section-code">SPECIALIZATION MATRIX</span><h2>Specializzazioni</h2><div class="tag-row"><span class="tag">Chiller</span><span class="tag">Pompe di calore</span><span class="tag">Diagnosi elettrica</span><span class="tag">R32</span></div><div class="activity-heatmap">${Array.from({length:42},(_,i)=>`<i class="${i%7===0||i%5===0?"hot":i%3===0?"mid":""}"></i>`).join("")}</div></section><section class="detail-card"><span class="section-code">TECHNICAL REPUTATION</span><h2>Reputazione tecnica</h2><p class="metadata">La reputazione deriva da soluzioni verificate e diagnosi utili, non da follower o like.</p></section></main>`, "profile");
 }
 function placeholderPage(title, text, active = "home") { return shell(`<main class="content"><div class="page-head"><h1>${title}</h1></div><div class="empty">${text}</div></main>`, active); }
 
